@@ -46,3 +46,5 @@ Ou seja:
 - use "Backup" para exportar os dados e importar em outro dispositivo.
 
 Para sincronizar automaticamente PC + iPhone + outros computadores, a evolução recomendada é ligar este mesmo layout a Supabase ou Firebase.
+
+Teste de integração ChatGPT + GitHub
