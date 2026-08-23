@@ -1,0 +1,1 @@
+window.SISPLAN_CLIENTES = [];
