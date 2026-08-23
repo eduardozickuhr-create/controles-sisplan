@@ -1,0 +1,9 @@
+{
+  "name": "Controles Sisplan",
+  "short_name": "Sisplan",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f3f6fa",
+  "theme_color": "#0f172a",
+  "icons": []
+}
