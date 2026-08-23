@@ -12,151 +12,34 @@
 <body>
   <div class="app-shell">
     <aside class="sidebar">
-      <div class="brand">
-        <div class="brand-mark">CS</div>
-        <div>
-          <strong>Controles Sisplan</strong>
-          <small>Base pessoal de consultas</small>
-        </div>
-      </div>
-
+      <div class="brand"><div class="brand-mark">CS</div><div><strong>Controles Sisplan</strong><small>Base pessoal de consultas</small></div></div>
       <nav class="main-nav">
-        <button class="nav-item active" data-section="reports">
-          <span class="nav-icon">▣</span>
-          <span>Relatórios / Telas</span>
-        </button>
-        <button class="nav-item" data-section="favorites">
-          <span class="nav-icon">★</span>
-          <span>Favoritos</span>
-        </button>
-        <button class="nav-item" data-section="backup">
-          <span class="nav-icon">⇅</span>
-          <span>Backup</span>
-        </button>
+        <button class="nav-item active" data-section="reports"><span class="nav-icon">▣</span><span>Relatórios / Telas</span></button>
+        <button class="nav-item" data-section="hours"><span class="nav-icon">◷</span><span>Controle de Horas</span></button>
+        <button class="nav-item" data-section="clients"><span class="nav-icon">⌂</span><span>Clientes Sisplan</span></button>
+        <button class="nav-item" data-section="favorites"><span class="nav-icon">★</span><span>Favoritos</span></button>
+        <button class="nav-item" data-section="backup"><span class="nav-icon">⇅</span><span>Backup</span></button>
       </nav>
-
-      <div class="sidebar-footer">
-        <span>CONTROLES SISPLAN</span>
-        <small>Organização de relatórios, telas e arquivos FR3</small>
-      </div>
+      <div class="sidebar-footer"><span>CONTROLES SISPLAN</span><small>Relatórios, clientes, horas e faturamento.</small></div>
     </aside>
-
     <main class="content">
-      <header class="topbar">
-        <div>
-          <p class="eyebrow">BIBLIOTECA PESSOAL</p>
-          <h1 id="pageTitle">Relatórios / Telas</h1>
-        </div>
-        <div class="top-actions">
-          <label class="search">
-            <span>⌕</span>
-            <input id="globalSearch" placeholder="Buscar tela, formulário ou observação..." />
-          </label>
-          <button id="newReportBtn" class="primary">+ Novo relatório</button>
-        </div>
-      </header>
-
-      <section id="reportsSection" class="section">
-        <div class="section-grid">
-          <aside class="report-list-panel">
-            <div class="panel-heading">
-              <div>
-                <span class="muted-label">TELAS CADASTRADAS</span>
-                <strong id="reportCount">0 itens</strong>
-              </div>
-              <button id="sortBtn" class="icon-btn" title="Ordenar A-Z">A↕</button>
-            </div>
-            <div id="reportList" class="report-list"></div>
-          </aside>
-
-          <section id="reportDetail" class="detail-panel"></section>
-        </div>
+      <header class="topbar"><div><p class="eyebrow">BIBLIOTECA PESSOAL</p><h1 id="pageTitle">Relatórios / Telas</h1></div><div class="top-actions" id="reportsTopActions"><label class="search"><span>⌕</span><input id="globalSearch" placeholder="Buscar tela, formulário ou observação..." /></label><button id="newReportBtn" class="primary">+ Novo relatório</button></div></header>
+      <section id="reportsSection" class="section"><div class="section-grid"><aside class="report-list-panel"><div class="panel-heading"><div><span class="muted-label">TELAS CADASTRADAS</span><strong id="reportCount">0 itens</strong></div><button id="sortBtn" class="icon-btn" title="Ordenar A-Z">A↕</button></div><div id="reportList" class="report-list"></div></aside><section id="reportDetail" class="detail-panel"></section></div></section>
+      <section id="hoursSection" class="section hidden">
+        <div class="hours-toolbar"><div><span class="muted-label">FATURAMENTO</span><h2>Controle de Horas Sisplan</h2><p>Viagem soma o adicional de viagem ao valor normal da hora.</p></div><button id="newHourBtn" class="primary">+ Lançar horas</button></div>
+        <div class="rate-card"><div><span class="muted-label">VALORES PADRÃO</span><strong>Valores da hora</strong></div><label>Hora normal (R$)<input id="defaultHourlyRate" type="number" step="0.01" min="0"></label><label>Adicional viagem / hora (R$)<input id="defaultTravelRate" type="number" step="0.01" min="0"></label><button id="saveRatesBtn" class="secondary">Salvar valores</button></div>
+        <div class="summary-grid"><div class="summary-card"><span>Faturamento filtrado</span><strong id="sumBilling">R$ 0,00</strong></div><div class="summary-card"><span>Horas filtradas</span><strong id="sumHours">0 h</strong></div><div class="summary-card"><span>Dias lançados</span><strong id="sumDays">0</strong></div><div class="summary-card"><span>Cidades</span><strong id="sumCities">0</strong></div></div>
+        <div class="filters-card"><label>Período<select id="periodFilter"><option value="month">Mês atual</option><option value="year">Ano atual</option><option value="all">Todos</option></select></label><label>Mês<input id="monthFilter" type="month"></label><label>Cliente<select id="clientFilter"><option value="">Todos</option></select></label><label>Cidade<select id="cityFilter"><option value="">Todas</option></select></label><label class="check-inline"><input id="travelFilter" type="checkbox"> Somente viagem</label></div>
+        <div class="table-card"><div class="table-header"><div><span class="muted-label">LANÇAMENTOS</span><strong id="hoursCount">0 registros</strong></div></div><div class="table-scroll"><table><thead><tr><th>Data</th><th>Cliente</th><th>Cidade/UF</th><th>Horas</th><th>Hora normal</th><th>Viagem</th><th>Adic. viagem</th><th>Total</th><th></th></tr></thead><tbody id="hoursTableBody"></tbody></table></div></div>
+        <div class="table-card"><div class="table-header"><div><span class="muted-label">RESUMO</span><strong>Faturamento por cidade</strong></div></div><div class="table-scroll"><table><thead><tr><th>Cidade/UF</th><th>Horas</th><th>Faturamento</th><th>Lançamentos</th></tr></thead><tbody id="citySummaryBody"></tbody></table></div></div>
       </section>
-
-      <section id="favoritesSection" class="section hidden">
-        <div class="empty-state large">
-          <div class="empty-icon">★</div>
-          <h2>Favoritos</h2>
-          <p>Marque seus relatórios mais usados com a estrela. Eles aparecerão aqui.</p>
-          <div id="favoritesList" class="favorite-cards"></div>
-        </div>
-      </section>
-
-      <section id="backupSection" class="section hidden">
-        <div class="settings-card">
-          <span class="muted-label">SEGURANÇA DOS DADOS</span>
-          <h2>Backup e restauração</h2>
-          <p>Os relatórios adicionados por você ficam salvos neste navegador. Exporte um backup para guardar ou levar para outro computador.</p>
-          <div class="backup-actions">
-            <button id="exportBtn" class="primary">Exportar backup</button>
-            <label class="secondary file-label">
-              Importar backup
-              <input id="importBackup" type="file" accept=".json,application/json" hidden />
-            </label>
-          </div>
-          <div class="callout">
-            <strong>Para acesso em vários dispositivos:</strong>
-            esta versão já funciona como site/PWA, mas os novos arquivos inseridos ficam no navegador. Para sincronização automática entre PC e iPhone, a próxima versão pode usar banco em nuvem (Supabase/Firebase).
-          </div>
-        </div>
-      </section>
+      <section id="clientsSection" class="section hidden"><div class="hours-toolbar"><div><span class="muted-label">BASE SISPLAN</span><h2>Clientes Sisplan</h2><p id="clientBaseInfo"></p></div></div><div class="filters-card clients-filters"><label class="grow">Pesquisar<input id="clientSearch" placeholder="Nome, fantasia, código ou cidade"></label><label>UF<select id="ufClientFilter"><option value="">Todas</option></select></label><label>Cidade<select id="cityClientFilter"><option value="">Todas</option></select></label></div><div class="table-card"><div class="table-header"><strong id="clientCount">0 clientes</strong></div><div class="table-scroll"><table><thead><tr><th>Código</th><th>Fantasia</th><th>Razão social</th><th>Cidade</th><th>UF</th></tr></thead><tbody id="clientsTableBody"></tbody></table></div></div></section>
+      <section id="favoritesSection" class="section hidden"><div class="empty-state large"><div class="empty-icon">★</div><h2>Favoritos</h2><p>Marque seus relatórios mais usados com a estrela.</p><div id="favoritesList" class="favorite-cards"></div></div></section>
+      <section id="backupSection" class="section hidden"><div class="settings-card"><span class="muted-label">SEGURANÇA DOS DADOS</span><h2>Backup e restauração</h2><p>O backup agora inclui relatórios, valores configurados e lançamentos de horas.</p><div class="backup-actions"><button id="exportBtn" class="primary">Exportar backup</button><label class="secondary file-label">Importar backup<input id="importBackup" type="file" accept=".json,application/json" hidden /></label></div></div></section>
     </main>
   </div>
-
-  <dialog id="reportModal">
-    <form id="reportForm" method="dialog">
-      <div class="modal-header">
-        <div>
-          <span class="muted-label">CADASTRO</span>
-          <h2>Novo relatório / tela</h2>
-        </div>
-        <button type="button" class="close-btn" id="closeModal">×</button>
-      </div>
-
-      <div class="form-grid">
-        <label>
-          <span>Nome da tela *</span>
-          <input id="screenName" required placeholder="Ex.: APP - FICHA TÉCNICA" />
-        </label>
-        <label>
-          <span>Nome do formulário</span>
-          <input id="formName" placeholder="Ex.: FichaTecnica" />
-        </label>
-        <label>
-          <span>Categoria</span>
-          <input id="category" value="Relatórios / Telas" />
-        </label>
-        <label>
-          <span>Tags</span>
-          <input id="tags" placeholder="Ex.: produto, ficha, técnico" />
-        </label>
-      </div>
-
-      <label>
-        <span>Observações</span>
-        <textarea id="notes" rows="3" placeholder="Onde usar, finalidade, parâmetros, dicas..."></textarea>
-      </label>
-
-      <div class="upload-grid">
-        <label class="upload-box">
-          <strong>Arquivo FR3</strong>
-          <span>Selecione o relatório original</span>
-          <input id="fr3File" type="file" accept=".fr3" />
-        </label>
-        <label class="upload-box">
-          <strong>Print / imagem</strong>
-          <span>PNG, JPG ou WEBP</span>
-          <input id="imageFile" type="file" accept="image/png,image/jpeg,image/webp" />
-        </label>
-      </div>
-
-      <div class="modal-actions">
-        <button type="button" id="cancelModal" class="secondary">Cancelar</button>
-        <button type="submit" class="primary">Salvar relatório</button>
-      </div>
-    </form>
-  </dialog>
-
-  <script src="app.js"></script>
+  <dialog id="reportModal"><form id="reportForm"><input type="hidden" id="editingReportId"><div class="modal-header"><div><span class="muted-label">CADASTRO</span><h2 id="reportModalTitle">Novo relatório / tela</h2></div><button type="button" class="close-btn" data-close="reportModal">×</button></div><div class="form-grid"><label><span>Nome da tela *</span><input id="screenName" required placeholder="Ex.: APP - FICHA TÉCNICA" /></label><label><span>Nome do formulário</span><input id="formName" placeholder="Ex.: FichaTecnica" /></label><label><span>Categoria</span><input id="category" value="Relatórios / Telas" /></label><label><span>Tags</span><input id="tags" placeholder="Ex.: produto, ficha, técnico" /></label></div><label><span>Observações</span><textarea id="notes" rows="4" placeholder="Finalidade, parâmetros, dicas, onde usar..."></textarea></label><div class="upload-grid"><label class="upload-box"><strong>Arquivo FR3</strong><span id="fr3Hint">Selecione o relatório original</span><input id="fr3File" type="file" accept=".fr3" /></label><label class="upload-box"><strong>Print / imagem</strong><span id="imageHint">PNG, JPG ou WEBP</span><input id="imageFile" type="file" accept="image/png,image/jpeg,image/webp" /></label></div><div class="modal-actions"><button type="button" class="secondary" data-close="reportModal">Cancelar</button><button type="submit" class="primary">Salvar relatório</button></div></form></dialog>
+  <dialog id="hourModal"><form id="hourForm"><input type="hidden" id="editingHourId"><div class="modal-header"><div><span class="muted-label">FATURAMENTO</span><h2 id="hourModalTitle">Lançar horas</h2></div><button type="button" class="close-btn" data-close="hourModal">×</button></div><div class="form-grid"><label><span>Data *</span><input id="hourDate" type="date" required></label><label><span>Cliente *</span><select id="hourClient" required><option value="">Selecione...</option></select></label><label><span>Total de horas *</span><input id="hourQty" type="number" min="0.01" step="0.25" required placeholder="Ex.: 8"></label><label><span>Valor hora normal (R$) *</span><input id="hourRate" type="number" min="0" step="0.01" required></label><label><span>Adicional viagem / hora (R$)</span><input id="travelRate" type="number" min="0" step="0.01"></label><label class="travel-switch"><span>É viagem?</span><input id="isTravel" type="checkbox"><b id="travelLabel">Não</b></label></div><label><span>Observação</span><textarea id="hourNotes" rows="3" placeholder="Opcional"></textarea></label><div class="calc-preview" id="hourCalcPreview">Total do lançamento: R$ 0,00</div><div class="modal-actions"><button type="button" class="secondary" data-close="hourModal">Cancelar</button><button type="submit" class="primary">Salvar lançamento</button></div></form></dialog>
+  <script src="clientes.js"></script><script src="app.js"></script>
 </body>
 </html>
