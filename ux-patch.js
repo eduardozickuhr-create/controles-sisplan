@@ -373,3 +373,188 @@
   new MutationObserver(enhance).observe(detail,{childList:true,subtree:true});
   enhance();
 })();
+
+
+/* INLINE REPORT AUTOSAVE V1 */
+(()=>{
+  const detail=document.getElementById('reportDetail');
+  if(!detail) return;
+  let saveTimer=null;
+  const editable=(element,field,multiline=false)=>{
+    if(!element)return;
+    element.contentEditable='true';
+    element.spellcheck=true;
+    element.dataset.inlineField=field;
+    element.dataset.multiline=multiline?'true':'false';
+    element.setAttribute('role','textbox');
+    element.setAttribute('aria-label','Editar '+field);
+    element.title='Clique e digite — salvamento automático';
+  };
+  const currentReport=()=>typeof reports!=='undefined'?reports.find(item=>item.id===selected):null;
+  function badge(value){
+    return String(value||'').replace(/APP\s*-\s*/i,'').split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0]).join('').toUpperCase()||'R';
+  }
+  function status(text,type=''){
+    const el=detail.querySelector('.inline-save-status');
+    if(!el)return;
+    el.textContent=text;
+    el.className='inline-save-status '+type;
+  }
+  async function persist(report){
+    clearTimeout(saveTimer);
+    status('Salvando...','saving');
+    report.updatedAt=new Date().toISOString();
+    try{
+      await put(R,report);
+      const idx=reports.findIndex(item=>item.id===report.id);
+      if(idx>=0)reports[idx]=report;
+      const row=detail.ownerDocument.querySelector(`[data-r="${CSS.escape(report.id)}"]`);
+      if(row){
+        const title=row.querySelector('.report-copy strong');
+        const form=row.querySelector('.report-copy small');
+        const icon=row.querySelector('.report-badge');
+        if(title)title.textContent=report.screenName;
+        if(form)form.textContent=report.formName||'Sem form';
+        if(icon)icon.textContent=badge(report.screenName);
+      }
+      const categoryLabel=detail.querySelector('.detail-header .muted-label');
+      if(categoryLabel)categoryLabel.textContent=report.category||'Relatórios / Telas';
+      status('✓ Salvo automaticamente','saved');
+      setTimeout(()=>{const s=detail.querySelector('.inline-save-status');if(s?.textContent.includes('Salvo'))s.textContent='';},1800);
+    }catch(error){
+      status('Não foi possível salvar','error');
+      console.error(error);
+    }
+  }
+  function schedule(report,immediate=false){
+    clearTimeout(saveTimer);
+    status('Alteração pendente...','saving');
+    saveTimer=setTimeout(()=>persist(report),immediate?0:650);
+  }
+  function updateFromElement(element){
+    const report=currentReport();
+    if(!report)return;
+    const field=element.dataset.inlineField;
+    let value=element.innerText.replace(/\u00a0/g,' ').trim();
+    if(field==='tags')report.tags=value.split(',').map(v=>v.trim()).filter(Boolean);
+    else report[field]=value;
+    schedule(report);
+  }
+  async function replaceFr3(file){
+    const report=currentReport();if(!report||!file)return;
+    status('Lendo FR3...','saving');
+    report.fr3Name=file.name;
+    report.fr3Data=await toText(file);
+    report.fr3Url=null;
+    await persist(report);
+    reports=await all(R);
+    renderReports();
+  }
+  async function replaceImage(file){
+    const report=currentReport();if(!report||!file||!file.type.startsWith('image/'))return;
+    status('Salvando imagem...','saving');
+    report.imageData=await toData(file);
+    await persist(report);
+    reports=await all(R);
+    renderReports();
+  }
+  function enhance(){
+    const report=currentReport();
+    if(!report||detail.dataset.inlineReportId===report.id)return;
+    detail.dataset.inlineReportId=report.id;
+    detail.querySelector('#editReport')?.remove();
+    const actions=detail.querySelector('.detail-actions');
+    if(actions&&!actions.querySelector('.inline-save-status')){
+      const save=document.createElement('span');
+      save.className='inline-save-status';
+      save.setAttribute('aria-live','polite');
+      actions.prepend(save);
+    }
+    editable(detail.querySelector('.detail-header h2'),'screenName');
+    const cards=[...detail.querySelectorAll('.meta-card')];
+    const findCard=label=>cards.find(card=>card.querySelector('span')?.textContent.trim().toLowerCase()===label.toLowerCase());
+    const formCard=findCard('Nome do Form');
+    const fileCard=findCard('Arquivo FR3');
+    const categoryCard=findCard('Categoria');
+    editable(formCard?.querySelector('strong'),'formName');
+    editable(fileCard?.querySelector('strong'),'fr3Name');
+    editable(categoryCard?.querySelector('strong'),'category');
+    if(fileCard){
+      fileCard.classList.add('inline-file-card');
+      const picker=document.createElement('input');
+      picker.type='file';picker.accept='.fr3';picker.hidden=true;
+      picker.addEventListener('change',()=>replaceFr3(picker.files[0]));
+      const change=document.createElement('button');
+      change.type='button';change.className='inline-change-file';change.textContent='Trocar FR3';
+      change.addEventListener('click',()=>picker.click());
+      fileCard.append(picker,change);
+    }
+    let extra=detail.querySelector('.inline-extra-fields');
+    if(!extra){
+      extra=document.createElement('div');
+      extra.className='inline-extra-fields';
+      extra.innerHTML=`<div class="inline-field-card"><span class="muted-label">TAGS</span><p class="inline-tags">${esc((report.tags||[]).join(', '))}</p><small>Separe por vírgulas</small></div><div class="inline-field-card inline-notes-card"><span class="muted-label">OBSERVAÇÕES</span><p class="inline-notes">${esc(report.notes||'')}</p></div>`;
+      const oldNotes=detail.querySelector('.notes-box');
+      if(oldNotes)oldNotes.remove();
+      detail.querySelector('.preview-wrap')?.after(extra);
+    }
+    editable(extra.querySelector('.inline-tags'),'tags');
+    editable(extra.querySelector('.inline-notes'),'notes',true);
+    const preview=detail.querySelector('.preview-wrap');
+    if(preview){
+      preview.classList.add('inline-image-area');
+      preview.title='Cole uma imagem com Ctrl + V ou arraste para cá';
+      const picker=document.createElement('input');
+      picker.type='file';picker.accept='image/png,image/jpeg,image/webp';picker.hidden=true;
+      picker.addEventListener('change',()=>replaceImage(picker.files[0]));
+      const change=document.createElement('button');
+      change.type='button';change.className='inline-change-image';
+      change.textContent=report.imageData?'Trocar print':'Adicionar print';
+      change.addEventListener('click',event=>{event.stopPropagation();picker.click();});
+      preview.append(picker,change);
+    }
+  }
+  detail.addEventListener('input',event=>{
+    const target=event.target.closest('[data-inline-field]');
+    if(target)updateFromElement(target);
+  });
+  detail.addEventListener('keydown',event=>{
+    const target=event.target.closest('[data-inline-field]');
+    if(!target)return;
+    if(event.key==='Enter'&&target.dataset.multiline!=='true'){
+      event.preventDefault();target.blur();
+    }
+    if(event.key==='Escape'){
+      event.preventDefault();renderReports();
+    }
+  });
+  detail.addEventListener('blur',event=>{
+    const target=event.target.closest?.('[data-inline-field]');
+    if(!target)return;
+    const report=currentReport();
+    if(target.dataset.inlineField==='screenName'&&!target.innerText.trim()){
+      target.textContent=report.screenName||'Sem nome';
+      return;
+    }
+    updateFromElement(target);
+    schedule(report,true);
+  },true);
+  detail.addEventListener('paste',event=>{
+    const file=[...(event.clipboardData?.items||[])].find(item=>item.type.startsWith('image/'))?.getAsFile();
+    if(!file)return;
+    event.preventDefault();replaceImage(file);
+  });
+  detail.addEventListener('dragover',event=>{
+    if([...(event.dataTransfer?.items||[])].some(item=>item.type.startsWith('image/'))){
+      event.preventDefault();detail.querySelector('.inline-image-area')?.classList.add('is-dragging');
+    }
+  });
+  detail.addEventListener('dragleave',()=>detail.querySelector('.inline-image-area')?.classList.remove('is-dragging'));
+  detail.addEventListener('drop',event=>{
+    const file=[...(event.dataTransfer?.files||[])].find(item=>item.type.startsWith('image/'));
+    detail.querySelector('.inline-image-area')?.classList.remove('is-dragging');
+    if(file){event.preventDefault();replaceImage(file);}
+  });
+  new MutationObserver(enhance).observe(detail,{childList:true,subtree:true});
+  enhance();
+})();
