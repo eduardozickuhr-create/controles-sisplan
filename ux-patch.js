@@ -228,3 +228,148 @@
   });
   observer.observe(modal,{attributes:true,attributeFilter:['open']});
 })();
+
+
+/* FR3 VISUAL PREVIEW V1 */
+(()=>{
+  const detail=document.getElementById('reportDetail');
+  if(!detail) return;
+  const num=value=>Number(String(value||'0').replace(',','.'))||0;
+  const attr=(node,name,fallback='')=>node.getAttribute(name)??fallback;
+  const mmToPx=mm=>num(mm)*3.7795275591;
+  const escapeHtml=value=>String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[ch]));
+  const color=value=>{
+    const n=Number(value);
+    if(!Number.isFinite(n)||n===-16777208||n===536870911) return '';
+    const v=n<0?0:n;
+    const r=v&255,g=(v>>8)&255,b=(v>>16)&255;
+    return `rgb(${r},${g},${b})`;
+  };
+  const fieldLabel=(node,text)=>{
+    const field=attr(node,'DataField');
+    const dataset=attr(node,'DataSetName')||attr(node,'DataSet');
+    if(field) return dataset?`<${dataset}.${field}>`:`<${field}>`;
+    return String(text||'')
+      .replace(/\[([^\]]+)\]/g,(_,v)=>`<${v.replace(/&quot;|"/g,'')}>`)
+      .replace(/<([^>]+)>/g,(_,v)=>`<${v.replace(/&quot;|"/g,'')}>`) || '';
+  };
+  function memoHtml(node,bandTop){
+    const x=num(attr(node,'Left')),y=bandTop+num(attr(node,'Top'));
+    const w=Math.max(1,num(attr(node,'Width'))),h=Math.max(1,num(attr(node,'Height')));
+    const text=fieldLabel(node,attr(node,'Text')).replace(/\r\n|\n/g,' ');
+    const font=Math.max(7,Math.min(26,Math.abs(num(attr(node,'Font.Height','-12')))*.78));
+    const fg=color(attr(node,'Font.Color'));
+    const bg=color(attr(node,'Fill.BackColor'));
+    const bold=(num(attr(node,'Font.Style'))&1)!==0;
+    const italic=(num(attr(node,'Font.Style'))&2)!==0;
+    const underline=(num(attr(node,'Font.Style'))&4)!==0;
+    const align={haCenter:'center',haRight:'right',haBlock:'justify'}[attr(node,'HAlign')]||'left';
+    const valign={vaCenter:'center',vaBottom:'flex-end'}[attr(node,'VAlign')]||'flex-start';
+    const frame=num(attr(node,'Frame.Typ'))!==0;
+    const radius=node.tagName.includes('Shape')?3:0;
+    const style=[
+      `left:${x}px`,`top:${y}px`,`width:${w}px`,`height:${h}px`,
+      `font-size:${font}px`,`font-family:${escapeHtml(attr(node,'Font.Name','Arial'))}`,
+      `font-weight:${bold?700:400}`,`font-style:${italic?'italic':'normal'}`,
+      `text-decoration:${underline?'underline':'none'}`,`text-align:${align}`,
+      `align-items:${valign}`,fg?`color:${fg}`:'',bg?`background:${bg}`:'',
+      frame?'border:1px solid #626b78':'',`border-radius:${radius}px`
+    ].filter(Boolean).join(';');
+    const title=escapeHtml(attr(node,'Name'));
+    return `<div class="fr3-object fr3-memo" style="${style}" title="${title}">${escapeHtml(text)}</div>`;
+  }
+  function visualHtml(node,bandTop){
+    const x=num(attr(node,'Left')),y=bandTop+num(attr(node,'Top'));
+    const w=Math.max(8,num(attr(node,'Width'))),h=Math.max(8,num(attr(node,'Height')));
+    if(node.tagName.includes('Line')){
+      return `<div class="fr3-line" style="left:${x}px;top:${y}px;width:${w}px;height:${Math.max(1,h)}px"></div>`;
+    }
+    if(node.tagName.includes('Picture')){
+      return `<div class="fr3-object fr3-picture" style="left:${x}px;top:${y}px;width:${w}px;height:${h}px" title="${escapeHtml(attr(node,'Name'))}"><span>▧</span><small>IMAGEM</small></div>`;
+    }
+    return memoHtml(node,bandTop);
+  }
+  function bandPriority(tag){
+    const order=['ReportTitle','PageHeader','ColumnHeader','GroupHeader','MasterData','DetailData','SubdetailData','GroupFooter','ReportSummary','PageFooter'];
+    const i=order.findIndex(x=>tag.includes(x));
+    return i<0?50:i;
+  }
+  function renderPage(page,index){
+    const paperW=mmToPx(attr(page,'PaperWidth','210'));
+    const paperH=mmToPx(attr(page,'PaperHeight','297'));
+    const marginL=mmToPx(attr(page,'LeftMargin','10'));
+    const marginR=mmToPx(attr(page,'RightMargin','10'));
+    const contentW=Math.max(200,paperW-marginL-marginR);
+    const bands=[...page.children].filter(n=>/Header|Footer|Data|Title|Summary/.test(n.tagName)&&n.tagName!=='TfrxDataPage');
+    bands.sort((a,b)=>bandPriority(a.tagName)-bandPriority(b.tagName));
+    let top=mmToPx(attr(page,'TopMargin','10'));
+    const objects=[];
+    const bandMarks=[];
+    for(const band of bands){
+      const h=Math.max(1,num(attr(band,'Height')));
+      bandMarks.push(`<div class="fr3-band-mark" style="top:${top}px;height:${h}px"><span>${escapeHtml(band.tagName.replace('Tfrx',''))}</span></div>`);
+      for(const node of [...band.children]){
+        if(/MemoView|PictureView|LineView|ShapeView|CheckBoxView|RichView/.test(node.tagName)) objects.push(visualHtml(node,top));
+      }
+      top+=h;
+    }
+    const marginBottom=mmToPx(attr(page,'BottomMargin','10'));
+    const canvasH=Math.max(paperH,top+marginBottom);
+    return `<section class="fr3-sheet-wrap"><div class="fr3-page-label">Página ${index+1} · ${escapeHtml(attr(page,'Name',`Page${index+1}`))}</div><div class="fr3-sheet" style="width:${paperW}px;height:${canvasH}px"><div class="fr3-content-boundary" style="left:${marginL}px;width:${contentW}px"></div>${bandMarks.join('')}${objects.join('')}</div></section>`;
+  }
+  async function getFr3(report){
+    if(report.fr3Data) return report.fr3Data;
+    if(report.fr3Url){
+      const response=await fetch(report.fr3Url);
+      if(!response.ok) throw new Error('Não foi possível abrir o arquivo FR3.');
+      return response.text();
+    }
+    throw new Error('Este cadastro não possui um arquivo FR3.');
+  }
+  async function openPreview(report,button){
+    const area=detail.querySelector('.preview-wrap');
+    if(!area) return;
+    const original=button.textContent;
+    button.disabled=true;button.textContent='Lendo FR3...';
+    area.innerHTML='<div class="fr3-loading"><span></span><strong>Montando protótipo do relatório...</strong></div>';
+    try{
+      const source=await getFr3(report);
+      const xml=new DOMParser().parseFromString(source,'application/xml');
+      const error=xml.querySelector('parsererror');
+      if(error) throw new Error('O arquivo não possui uma estrutura XML válida.');
+      const pages=[...xml.querySelectorAll('TfrxReportPage')];
+      if(!pages.length) throw new Error('Nenhuma página de relatório foi encontrada no FR3.');
+      area.innerHTML=`<div class="fr3-viewer"><div class="fr3-toolbar"><div><strong>Prévia estrutural do FR3</strong><small>Campos são demonstrativos; dados reais aparecem no Sisplan.</small></div><div class="fr3-zoom"><button type="button" data-zoom="-">−</button><span>60%</span><button type="button" data-zoom="+">+</button><button type="button" data-zoom="fit">Ajustar</button></div></div><div class="fr3-stage"><div class="fr3-pages">${pages.map(renderPage).join('')}</div></div></div>`;
+      let zoom=.6;
+      const pagesEl=area.querySelector('.fr3-pages');
+      const zoomText=area.querySelector('.fr3-zoom span');
+      const apply=()=>{pagesEl.style.setProperty('--fr3-zoom',zoom);zoomText.textContent=`${Math.round(zoom*100)}%`;};
+      apply();
+      area.querySelector('.fr3-zoom').addEventListener('click',event=>{
+        const action=event.target.dataset.zoom;if(!action)return;
+        if(action==='+')zoom=Math.min(1.5,zoom+.1);
+        if(action==='-')zoom=Math.max(.2,zoom-.1);
+        if(action==='fit'){
+          const sheet=area.querySelector('.fr3-sheet');
+          zoom=Math.max(.2,Math.min(1,(area.querySelector('.fr3-stage').clientWidth-48)/(sheet?.offsetWidth||1000)));
+        }
+        apply();
+      });
+    }catch(error){
+      area.innerHTML=`<div class="fr3-error"><strong>Não consegui montar a prévia</strong><p>${escapeHtml(error.message)}</p></div>`;
+    }finally{button.disabled=false;button.textContent=original;}
+  }
+  function enhance(){
+    const report=typeof reports!=='undefined'?reports.find(item=>item.id===selected):null;
+    const actions=detail.querySelector('.detail-actions');
+    if(!report||!actions||actions.querySelector('#previewFr3')||(!report.fr3Data&&!report.fr3Url)) return;
+    const button=document.createElement('button');
+    button.type='button';button.id='previewFr3';button.className='secondary fr3-preview-btn';
+    button.innerHTML='▣ VISUALIZAR FR3';
+    const download=actions.querySelector('#downloadFr3, a[download]');
+    if(download) download.after(button); else actions.append(button);
+    button.addEventListener('click',()=>openPreview(report,button));
+  }
+  new MutationObserver(enhance).observe(detail,{childList:true,subtree:true});
+  enhance();
+})();
