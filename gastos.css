@@ -1,0 +1,181 @@
+.expenses-hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  margin-bottom: 16px;
+}
+.expenses-hero h2 {
+  margin: 2px 0 6px;
+}
+.expenses-hero p:last-child {
+  color: var(--muted);
+  margin: 0;
+}
+.expense-steps {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.expense-card {
+  position: relative;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 20px;
+  box-shadow: var(--shadow);
+}
+.expense-card.wide {
+  grid-column: 1/-1;
+}
+.expense-card h3 {
+  margin: 0 0 15px;
+  padding-left: 34px;
+}
+.step-number {
+  position: absolute;
+  top: 17px;
+  left: 18px;
+  display: grid;
+  place-items: center;
+  width: 25px;
+  height: 25px;
+  border-radius: 8px;
+  background: #eaf1ff;
+  color: #1d4ed8;
+  font-weight: 850;
+}
+.expense-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.expense-form-grid label {
+  font-size: 11px;
+  font-weight: 750;
+  color: #586579;
+}
+.expense-form-grid input {
+  display: block;
+  width: 100%;
+  margin-top: 6px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 10px;
+  color: var(--text);
+}
+.day-actions,
+.uber-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 13px;
+}
+.expense-days {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(125px, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+  max-height: 225px;
+  overflow: auto;
+}
+.expense-day {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 9px;
+  background: #fff;
+  font-size: 11px;
+}
+.expense-day:has(input:checked) {
+  border-color: #8ab0ff;
+  background: #f2f6ff;
+}
+.expense-day strong {
+  display: block;
+}
+.expense-day small {
+  color: #64748b;
+}
+.expense-empty,
+.card-help {
+  color: #64748b;
+  font-size: 12px;
+}
+.uber-drop {
+  display: grid;
+  place-items: center;
+  text-align: center;
+  gap: 5px;
+  border: 2px dashed #bfd1ff;
+  border-radius: 12px;
+  padding: 25px;
+  background: #f7faff;
+  color: #1d4ed8;
+  cursor: pointer;
+}
+.uber-drop span {
+  color: #64748b;
+  font-size: 11px;
+}
+.uber-drop input {
+  display: none;
+}
+.uber-toolbar {
+  margin-bottom: 10px;
+  color: #64748b;
+  font-size: 12px;
+}
+.receipt-value,
+.receipt-date,
+.receipt-description {
+  width: 100%;
+  min-width: 110px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 7px;
+}
+.expense-summary {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-top: 14px;
+}
+.expense-summary > div {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  padding: 15px;
+}
+.expense-summary span {
+  display: block;
+  color: #64748b;
+  font-size: 11px;
+  margin-bottom: 6px;
+}
+.expense-summary strong {
+  font-size: 20px;
+}
+.expense-summary .total {
+  background: #172554;
+  color: #fff;
+}
+.expense-summary .total span {
+  color: #bfdbfe;
+}
+@media (max-width: 850px) {
+  .expense-steps,
+  .expense-form-grid,
+  .expense-summary {
+    grid-template-columns: 1fr;
+  }
+  .expense-card.wide {
+    grid-column: auto;
+  }
+  .expenses-hero {
+    flex-direction: column;
+  }
+}

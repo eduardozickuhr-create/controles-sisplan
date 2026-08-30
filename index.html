@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="styles.css" />
     <link rel="stylesheet" href="v2.css" />
     <link rel="stylesheet" href="ux-patch.css?v=2.6" />
+    <link rel="stylesheet" href="gastos.css?v=2.7" />
   </head>
   <body>
     <div class="app-shell">
@@ -31,6 +32,8 @@
           <button class="nav-item" data-section="hours">
             <span class="nav-icon">◷</span
             ><span>Controle de Horas</span></button
+          ><button class="nav-item" data-section="expenses">
+            <span class="nav-icon">$</span><span>Gastos</span></button
           ><button class="nav-item" data-section="clients">
             <span class="nav-icon">⌂</span><span>Clientes Sisplan</span></button
           ><button class="nav-item" data-section="favorites">
@@ -210,6 +213,167 @@
             </div>
           </div>
         </section>
+        +
+        <section id="expensesSection" class="section hidden">
+          <div class="expenses-hero">
+            <div>
+              <p class="eyebrow">PRESTAÇÃO DE CONTAS</p>
+              <h2>Gastos de viagem</h2>
+              <p>
+                Escolha os dias, importe os comprovantes da Uber e gere a
+                planilha pronta.
+              </p>
+            </div>
+            <button id="generateExpenseExcel" class="primary">
+              Gerar Excel
+            </button>
+          </div>
+          <div class="expense-steps">
+            <article class="expense-card">
+              <span class="step-number">1</span>
+              <h3>Dados da viagem</h3>
+              <div class="expense-form-grid">
+                <label
+                  >Consultor<input
+                    id="expenseConsultant"
+                    placeholder="Nome do consultor" /></label
+                ><label
+                  >Cliente<input
+                    id="expenseClient"
+                    placeholder="Nome do cliente" /></label
+                ><label
+                  >PIX<input id="expensePix" placeholder="Chave PIX" /></label
+                ><label
+                  >Valor antecipado<input
+                    id="expenseAdvance"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value="0" /></label
+                ><label
+                  >Local de partida<input
+                    id="expenseOrigin"
+                    value="CASA" /></label
+                ><label
+                  >Local de destino<input
+                    id="expenseDestination"
+                    value="CLIENTE" /></label
+                ><label
+                  >Meio de transporte<input
+                    id="expenseTransport"
+                    value="AVIÃO" /></label
+                ><label
+                  >Nome do arquivo<input
+                    id="expenseFilename"
+                    value="Despesas de Viagem"
+                /></label>
+              </div>
+            </article>
+            <article class="expense-card">
+              <span class="step-number">2</span>
+              <h3>Período e diárias</h3>
+              <div class="expense-form-grid compact">
+                <label
+                  >Data inicial<input id="expenseStart" type="date" /></label
+                ><label>Data final<input id="expenseEnd" type="date" /></label
+                ><label
+                  >Diária (seg. a sex.)<input
+                    id="expenseWeekdayRate"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value="42" /></label
+                ><label
+                  >Diária (fim de semana)<input
+                    id="expenseWeekendRate"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value="70.35"
+                /></label>
+              </div>
+              <div class="day-actions">
+                <button id="buildExpenseDays" class="secondary" type="button">
+                  Montar dias</button
+                ><button
+                  id="selectAllExpenseDays"
+                  class="secondary"
+                  type="button"
+                >
+                  Marcar todos
+                </button>
+              </div>
+              <div id="expenseDays" class="expense-days">
+                <p class="expense-empty">
+                  Informe o período para escolher os dias.
+                </p>
+              </div>
+            </article>
+            <article class="expense-card wide">
+              <span class="step-number">3</span>
+              <h3>Comprovantes Uber</h3>
+              <p class="card-help">
+                Selecione todos os PDFs de uma vez. A leitura acontece no seu
+                computador; os arquivos não são enviados.
+              </p>
+              <label class="uber-drop"
+                ><strong>Importar PDFs da Uber</strong
+                ><span
+                  >Arraste aqui ou clique para selecionar vários
+                  comprovantes</span
+                ><input
+                  id="uberPdfInput"
+                  type="file"
+                  accept="application/pdf,.pdf"
+                  multiple
+              /></label>
+              <div class="uber-toolbar">
+                <span id="uberImportStatus">Nenhum PDF importado</span
+                ><button id="clearUberReceipts" class="secondary" type="button">
+                  Limpar
+                </button>
+              </div>
+              <div class="table-scroll">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Data</th>
+                      <th>Descrição</th>
+                      <th>Valor</th>
+                      <th>PDF</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody id="uberReceiptsBody">
+                    <tr>
+                      <td colspan="5" class="empty-state">
+                        Importe os comprovantes.
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </article>
+          </div>
+          <div class="expense-summary">
+            <div>
+              <span>Dias escolhidos</span
+              ><strong id="expenseSelectedDays">0</strong>
+            </div>
+            <div>
+              <span>Alimentação</span
+              ><strong id="expenseMealTotal">R$ 0,00</strong>
+            </div>
+            <div>
+              <span>Uber</span><strong id="expenseUberTotal">R$ 0,00</strong>
+            </div>
+            <div class="total">
+              <span>Total previsto</span
+              ><strong id="expenseGrandTotal">R$ 0,00</strong>
+            </div>
+          </div>
+        </section>
+
         <section id="clientsSection" class="section hidden">
           <div class="hours-toolbar">
             <div>
@@ -476,6 +640,9 @@
     <script src="client-loader.js"></script>
     <script src="app-v2.js?v=2.6"></script>
     <script src="ux-patch.js?v=2.6"></script>
+    <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+    <script src="gastos.js?v=2.7"></script>
     <script>
       document
         .getElementById("clientCsvImport")

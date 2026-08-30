@@ -424,6 +424,7 @@ function nav(sec) {
     reports: "Relatórios / Telas",
     projects: "Projetos",
     hours: "Controle de Horas",
+    expenses: "Gastos",
     clients: "Clientes Sisplan",
     favorites: "Favoritos",
     backup: "Backup",
@@ -431,6 +432,7 @@ function nav(sec) {
   q("#reportsTopActions").style.display = sec === "reports" ? "flex" : "none";
   if (sec === "projects") renderProjects();
   if (sec === "hours") renderHours();
+  if (sec === "expenses" && window.renderExpenses) window.renderExpenses();
   if (sec === "clients") renderClients();
 }
 document.addEventListener("click", async (e) => {
