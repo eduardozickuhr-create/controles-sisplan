@@ -1,4 +1,4 @@
-const CACHE='controles-sisplan-v2.4';
+const CACHE='controles-sisplan-v2.5';
 self.addEventListener('install',e=>{self.skipWaiting();e.waitUntil(caches.open(CACHE).then(c=>c.addAll(['./','index.html','styles.css','v2.css','ux-patch.css','client-loader.js','app-v2.js','ux-patch.js','manifest.webmanifest','icon.svg','assets/FichaTecnica.fr3']))) });
 self.addEventListener('activate',e=>e.waitUntil(Promise.all([self.clients.claim(),caches.keys().then(k=>Promise.all(k.filter(x=>x!==CACHE).map(x=>caches.delete(x))))])));
 self.addEventListener('fetch',e=>e.respondWith(fetch(e.request).then(r=>{let c=r.clone();caches.open(CACHE).then(x=>x.put(e.request,c));return r}).catch(()=>caches.match(e.request))));
