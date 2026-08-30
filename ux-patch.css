@@ -39,3 +39,23 @@
 .fr3-line{position:absolute;border-top:1px solid #374151;z-index:2}
 .fr3-band-mark{position:absolute;left:0;right:0;border-top:1px dashed rgba(37,99,235,.2);pointer-events:none;z-index:1}.fr3-band-mark span{position:absolute;right:3px;top:2px;color:rgba(37,99,235,.35);font-size:8px;font-weight:800}
 @media(max-width:700px){.fr3-toolbar{align-items:flex-start;flex-direction:column}.fr3-stage{padding:12px}.fr3-viewer{height:70vh}}
+
+
+/* INLINE REPORT AUTOSAVE V1 */
+[data-inline-field]{border-radius:6px;outline:none;cursor:text;transition:.15s ease}
+[data-inline-field]:hover{background:#fff;border-color:#b8cdfd;box-shadow:0 0 0 4px rgba(37,99,235,.07)}
+[data-inline-field]:focus{background:#fff;box-shadow:0 0 0 3px rgba(37,99,235,.16);padding:3px 6px;margin:-3px -6px}
+.detail-header h2[data-inline-field]{min-width:130px}
+.meta-card strong[data-inline-field]{display:block;min-height:22px;padding:2px 3px;margin:-2px -3px}
+.inline-save-status{min-width:142px;align-self:center;text-align:right;font-size:11px;font-weight:800;color:#64748b}
+.inline-save-status.saved{color:#0f766e}.inline-save-status.error{color:#b91c1c}.inline-save-status.saving{color:#64748b}
+.inline-file-card{position:relative;padding-right:92px}.inline-change-file{position:absolute;right:9px;bottom:9px;border:1px solid #bfd1ff;background:#fff;color:#1d4ed8;border-radius:7px;padding:5px 7px;font-size:10px;font-weight:800}
+.inline-extra-fields{display:grid;grid-template-columns:minmax(180px,.65fr) minmax(260px,1.35fr);gap:10px;margin-top:16px}
+.inline-field-card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:13px}
+.inline-field-card p{margin:5px 0 0;min-height:24px;white-space:pre-wrap;color:#334155;font-size:13px}
+.inline-field-card small{display:block;color:#94a3b8;font-size:9px;margin-top:4px}
+.inline-notes-card p{min-height:44px}
+.inline-image-area{position:relative}.inline-image-area.is-dragging{outline:3px solid #2563eb;outline-offset:-3px;background:#eaf1ff}
+.inline-change-image{position:absolute;right:13px;top:13px;z-index:8;border:1px solid #bfd1ff;background:rgba(255,255,255,.94);color:#1d4ed8;border-radius:8px;padding:7px 10px;font-size:11px;font-weight:850;box-shadow:0 4px 12px rgba(15,23,42,.1)}
+.inline-change-image::after{content:' · Ctrl + V';color:#64748b;font-weight:650}
+@media(max-width:800px){.inline-extra-fields{grid-template-columns:1fr}.inline-save-status{width:100%;text-align:left;order:10}.inline-file-card{padding-right:13px;padding-bottom:45px}}
