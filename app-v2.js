@@ -172,7 +172,18 @@ function renderDetail() {
     p.innerHTML = '<div class="empty-state"><h2>Nenhum relatório</h2></div>';
     return;
   }
-  p.innerHTML = `<div class="detail-header"><div><span class="muted-label">${esc(r.category || "RELATÓRIOS / TELAS")}</span><h2>${esc(r.screenName)}</h2><p>Arquivo, print e informações da tela.</p></div><div class="detail-actions"><button class="secondary edit-report-btn" id="editReport">✎ ALTERAR</button><button class="secondary" id="favDetail">${r.favorite ? "★ Favorito" : "☆ Favoritar"}</button>${r.fr3Data ? '<button class="secondary" id="downloadFr3">Baixar .FR3</button>' : r.fr3Url ? `<a class="secondary" href="${r.fr3Url}" download style="text-decoration:none">Baixar .FR3</a>` : ""}${r.builtIn ? "" : '<button class="secondary danger" id="deleteReport">Excluir</button>'}</div></div><div class="meta-grid"><div class="meta-card"><span>Nome do Form</span><strong>${esc(r.formName || "Não informado")}</strong></div><div class="meta-card"><span>Arquivo FR3</span><strong>${esc(r.fr3Name || "Não anexado")}</strong></div><div class="meta-card"><span>Categoria</span><strong>${esc(r.category || "Relatórios / Telas")}</strong></div></div><div class="preview-wrap">${r.imageData ? `<img src="${r.imageData}">` : '<div class="no-preview"><div class="symbol">▧</div><strong>Sem print cadastrado</strong><p>Clique em ALTERAR para inserir uma imagem.</p></div>'}</div>${r.notes ? `<div class="notes-box"><span class="muted-label">OBSERVAÇÕES</span><p>${esc(r.notes)}</p></div>` : ""}`;
+  p.dataset.inlineCore = "true";
+  p.innerHTML = `<div class="detail-header"><div class="inline-title-group"><span class="muted-label">NOME DA TELA</span><input class="inline-core-title" data-report-field="screenName" value="${esc(r.screenName)}" aria-label="Nome da tela"><p>Todos os campos abaixo salvam automaticamente.</p></div><div class="detail-actions"><span id="coreAutoSaveStatus" class="core-save-status"></span><button class="secondary" id="favDetail">${r.favorite ? "★ Favorito" : "☆ Favoritar"}</button>${r.fr3Data ? '<button class="secondary" id="downloadFr3">Baixar .FR3</button>' : r.fr3Url ? `<a class="secondary" href="${r.fr3Url}" download style="text-decoration:none">Baixar .FR3</a>` : ""}${r.builtIn ? "" : '<button class="secondary danger" id="deleteReport">Excluir</button>'}</div></div>
+  <div class="meta-grid inline-core-grid">
+    <label class="meta-card"><span>NOME DO FORM</span><input data-report-field="formName" value="${esc(r.formName || "")}" placeholder="Nome do formulário"></label>
+    <label class="meta-card inline-core-file"><span>ARQUIVO FR3</span><input data-report-field="fr3Name" value="${esc(r.fr3Name || "")}" placeholder="Nome do arquivo"><input id="directFr3File" type="file" accept=".fr3" hidden><button type="button" id="directFr3Button">Trocar arquivo</button></label>
+    <label class="meta-card"><span>CATEGORIA</span><input data-report-field="category" value="${esc(r.category || "Relatórios / Telas")}" placeholder="Categoria"></label>
+  </div>
+  <div class="inline-core-secondary">
+    <label class="inline-core-card"><span>TAGS</span><input data-report-field="tags" value="${esc((r.tags || []).join(", "))}" placeholder="Ex.: PCP, expedição, etiqueta"><small>Separe as tags por vírgulas.</small></label>
+    <label class="inline-core-card"><span>OBSERVAÇÕES</span><textarea data-report-field="notes" rows="3" placeholder="Digite suas observações...">${esc(r.notes || "")}</textarea></label>
+  </div>
+  <div class="preview-wrap direct-image-area">${r.imageData ? `<img src="${r.imageData}">` : '<div class="no-preview"><div class="symbol">▧</div><strong>Sem print cadastrado</strong><p>Cole com Ctrl + V, arraste uma imagem ou clique no botão.</p></div>'}<input id="directImageFile" type="file" accept="image/png,image/jpeg,image/webp" hidden><button type="button" id="directImageButton">${r.imageData ? "Trocar print" : "Adicionar print"} · Ctrl + V</button></div>`;
 }
 function openReport(r) {
   q("#reportForm").reset();
@@ -414,6 +425,100 @@ function renderClients() {
     )
     .join("");
 }
+
+/* CORE INLINE EDIT + HOURS PASSWORD V1 */
+let coreSaveTimer = null;
+function coreSaveStatus(text, type = "") {
+  const el = q("#coreAutoSaveStatus");
+  if (!el) return;
+  el.textContent = text;
+  el.className = "core-save-status " + type;
+}
+async function saveDirectReport(report) {
+  clearTimeout(coreSaveTimer);
+  coreSaveStatus("Salvando...", "saving");
+  report.updatedAt = new Date().toISOString();
+  await put(R, report);
+  const row = document.querySelector(`[data-r="${CSS.escape(report.id)}"]`);
+  if (row) {
+    const title = row.querySelector(".report-copy strong");
+    const form = row.querySelector(".report-copy small");
+    if (title) title.textContent = report.screenName;
+    if (form) form.textContent = report.formName || "Sem form";
+  }
+  coreSaveStatus("✓ Salvo automaticamente", "saved");
+  setTimeout(() => { if (q("#coreAutoSaveStatus")?.textContent.includes("Salvo")) coreSaveStatus(""); }, 1600);
+}
+function scheduleDirectReportSave(report, immediate = false) {
+  clearTimeout(coreSaveTimer);
+  coreSaveStatus("Alteração pendente...", "saving");
+  coreSaveTimer = setTimeout(() => saveDirectReport(report), immediate ? 0 : 550);
+}
+function bytesToHex(bytes) {
+  return [...new Uint8Array(bytes)].map(b => b.toString(16).padStart(2, "0")).join("");
+}
+async function passwordHash(password, salt) {
+  const data = new TextEncoder().encode(salt + ":" + password);
+  return bytesToHex(await crypto.subtle.digest("SHA-256", data));
+}
+function openHoursPasswordDialog(firstAccess) {
+  return new Promise((resolve) => {
+    const modal = q("#hoursPasswordModal");
+    const form = q("#hoursPasswordForm");
+    const title = q("#hoursPasswordTitle");
+    const message = q("#hoursPasswordMessage");
+    const password = q("#hoursPasswordInput");
+    const confirmWrap = q("#hoursPasswordConfirmWrap");
+    const confirmation = q("#hoursPasswordConfirm");
+    const error = q("#hoursPasswordError");
+    title.textContent = firstAccess ? "Criar senha do Controle de Horas" : "Acessar Controle de Horas";
+    message.textContent = firstAccess ? "Cadastre uma senha com pelo menos 6 caracteres." : "Informe sua senha para abrir esta área.";
+    confirmWrap.hidden = !firstAccess;
+    password.value = "";
+    confirmation.value = "";
+    error.textContent = "";
+    let finished = false;
+    const finish = (value) => {
+      if (finished) return;
+      finished = true;
+      modal.close();
+      form.removeEventListener("submit", submit);
+      modal.removeEventListener("cancel", cancel);
+      resolve(value);
+    };
+    const cancel = (event) => { event.preventDefault(); finish(null); };
+    const submit = (event) => {
+      event.preventDefault();
+      if (password.value.length < 6) { error.textContent = "A senha precisa ter pelo menos 6 caracteres."; return; }
+      if (firstAccess && password.value !== confirmation.value) { error.textContent = "As senhas não são iguais."; return; }
+      finish(password.value);
+    };
+    form.addEventListener("submit", submit);
+    modal.addEventListener("cancel", cancel);
+    modal.showModal();
+    setTimeout(() => password.focus(), 30);
+  });
+}
+async function requireHoursPassword() {
+  const storedHash = await getSet("hoursPasswordHash", "");
+  const storedSalt = await getSet("hoursPasswordSalt", "");
+  const firstAccess = !storedHash || !storedSalt;
+  const password = await openHoursPasswordDialog(firstAccess);
+  if (password === null) return false;
+  if (firstAccess) {
+    const salt = crypto.getRandomValues(new Uint32Array(4)).join("-");
+    await setSet("hoursPasswordSalt", salt);
+    await setSet("hoursPasswordHash", await passwordHash(password, salt));
+    return true;
+  }
+  const valid = (await passwordHash(password, storedSalt)) === storedHash;
+  if (!valid) {
+    alert("Senha incorreta.");
+    return false;
+  }
+  return true;
+}
+
 function nav(sec) {
   qa(".nav-item").forEach((x) =>
     x.classList.toggle("active", x.dataset.section === sec),
@@ -437,7 +542,7 @@ function nav(sec) {
 }
 document.addEventListener("click", async (e) => {
   let n = e.target.closest(".nav-item");
-  if (n) nav(n.dataset.section);
+  if (n) { const section = n.dataset.section; if (section === "hours" && !(await requireHoursPassword())) return; nav(section); }
   let rb = e.target.closest("[data-r]");
   if (rb && !e.target.closest("[data-star]")) {
     selected = rb.dataset.r;
@@ -489,6 +594,63 @@ document.addEventListener("click", async (e) => {
   let c = e.target.closest("[data-close]");
   if (c) q("#" + c.dataset.close).close();
 });
+
+/* DIRECT REPORT FIELD EVENTS */
+q("#reportDetail").addEventListener("input", (event) => {
+  const field = event.target.dataset.reportField;
+  if (!field) return;
+  const report = reports.find((item) => item.id === selected);
+  if (!report) return;
+  report[field] = field === "tags" ? event.target.value.split(",").map(v => v.trim()).filter(Boolean) : event.target.value;
+  scheduleDirectReportSave(report);
+});
+q("#reportDetail").addEventListener("change", async (event) => {
+  const report = reports.find((item) => item.id === selected);
+  if (!report) return;
+  if (event.target.id === "directFr3File" && event.target.files[0]) {
+    const file = event.target.files[0];
+    report.fr3Name = file.name;
+    report.fr3Data = await toText(file);
+    report.fr3Url = null;
+    await saveDirectReport(report);
+    renderReports();
+  }
+  if (event.target.id === "directImageFile" && event.target.files[0]) {
+    report.imageData = await toData(event.target.files[0]);
+    await saveDirectReport(report);
+    renderReports();
+  }
+});
+q("#reportDetail").addEventListener("click", (event) => {
+  if (event.target.id === "directFr3Button") q("#directFr3File").click();
+  if (event.target.id === "directImageButton") q("#directImageFile").click();
+});
+q("#reportDetail").addEventListener("paste", async (event) => {
+  const file = [...(event.clipboardData?.items || [])].find(item => item.type.startsWith("image/"))?.getAsFile();
+  if (!file) return;
+  event.preventDefault();
+  const report = reports.find((item) => item.id === selected);
+  report.imageData = await toData(file);
+  await saveDirectReport(report);
+  renderReports();
+});
+q("#reportDetail").addEventListener("dragover", (event) => {
+  if ([...(event.dataTransfer?.items || [])].some(item => item.type.startsWith("image/"))) {
+    event.preventDefault();
+    q(".direct-image-area")?.classList.add("is-dragging");
+  }
+});
+q("#reportDetail").addEventListener("drop", async (event) => {
+  const file = [...(event.dataTransfer?.files || [])].find(item => item.type.startsWith("image/"));
+  q(".direct-image-area")?.classList.remove("is-dragging");
+  if (!file) return;
+  event.preventDefault();
+  const report = reports.find((item) => item.id === selected);
+  report.imageData = await toData(file);
+  await saveDirectReport(report);
+  renderReports();
+});
+
 q("#globalSearch").addEventListener("input", renderReports);
 q("#sortBtn").addEventListener("click", () => {
   asc = !asc;
