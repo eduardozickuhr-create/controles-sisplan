@@ -459,6 +459,7 @@
     renderReports();
   }
   function enhance(){
+    if(detail.dataset.inlineCore==='true') return;
     const report=currentReport();
     if(!report||detail.dataset.inlineReportId===report.id)return;
     detail.dataset.inlineReportId=report.id;
