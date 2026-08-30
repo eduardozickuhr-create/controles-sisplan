@@ -132,3 +132,99 @@
     }
   },true);
 })();
+
+
+/* QUICK IMAGE CAPTURE V1 */
+(()=>{
+  const modal=document.getElementById('reportModal');
+  const form=document.getElementById('reportForm');
+  const input=document.getElementById('imageFile');
+  const hint=document.getElementById('imageHint');
+  const screenName=document.getElementById('screenName');
+  const box=input?.closest('.upload-box');
+  if(!modal||!form||!input||!hint||!box) return;
+
+  box.classList.add('paste-image-box');
+  const title=box.querySelector('strong');
+  if(title) title.textContent='Print / imagem — cole aqui';
+  input.setAttribute('title','Escolher imagem ou colar com Ctrl + V');
+
+  const preview=document.createElement('div');
+  preview.className='paste-preview';
+  preview.hidden=true;
+  box.append(preview);
+
+  let previewUrl='';
+  function showFile(file,source='selecionada'){
+    if(!file||!file.type.startsWith('image/')) return false;
+    if(previewUrl) URL.revokeObjectURL(previewUrl);
+    previewUrl=URL.createObjectURL(file);
+    preview.innerHTML='<img alt="Pré-visualização da imagem"><button type="button" aria-label="Remover imagem" title="Remover imagem">×</button>';
+    preview.querySelector('img').src=previewUrl;
+    preview.hidden=false;
+    hint.textContent=`Imagem ${source}: ${file.name||'print da área de transferência'}`;
+    box.classList.add('has-image');
+    return true;
+  }
+  function attachFile(file,source){
+    const ext=(file.type.split('/')[1]||'png').replace('jpeg','jpg');
+    const named=file.name?file:new File([file],`print-${new Date().toISOString().replace(/[:.]/g,'-') }.${ext}`,{type:file.type});
+    const transfer=new DataTransfer();
+    transfer.items.add(named);
+    input.files=transfer.files;
+    input.dispatchEvent(new Event('change',{bubbles:true}));
+    showFile(named,source);
+  }
+  function clipboardImage(event){
+    return [...(event.clipboardData?.items||[])].find(item=>item.type.startsWith('image/'))?.getAsFile();
+  }
+  document.addEventListener('paste',event=>{
+    if(!modal.open) return;
+    const file=clipboardImage(event);
+    if(!file) return;
+    event.preventDefault();
+    attachFile(file,'colada');
+  });
+  input.addEventListener('change',()=>{ if(input.files[0]) showFile(input.files[0],'selecionada'); });
+  preview.addEventListener('click',event=>{
+    if(!event.target.closest('button')) return;
+    input.value='';
+    if(previewUrl) URL.revokeObjectURL(previewUrl);
+    previewUrl='';
+    preview.hidden=true;
+    box.classList.remove('has-image');
+    hint.textContent='Pressione Ctrl + V, arraste ou clique para escolher';
+  });
+  ['dragenter','dragover'].forEach(type=>box.addEventListener(type,event=>{
+    event.preventDefault();
+    box.classList.add('is-dragging');
+  }));
+  ['dragleave','drop'].forEach(type=>box.addEventListener(type,event=>{
+    event.preventDefault();
+    box.classList.remove('is-dragging');
+  }));
+  box.addEventListener('drop',event=>{
+    const file=[...(event.dataTransfer?.files||[])].find(item=>item.type.startsWith('image/'));
+    if(file) attachFile(file,'arrastada');
+  });
+  document.addEventListener('keydown',event=>{
+    if(!modal.open) return;
+    if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='s'){
+      event.preventDefault();
+      form.requestSubmit();
+    }
+    if((event.ctrlKey||event.metaKey)&&event.key==='Enter'){
+      event.preventDefault();
+      form.requestSubmit();
+    }
+  });
+  const observer=new MutationObserver(()=>{
+    if(!modal.open) return;
+    input.value='';
+    preview.hidden=true;
+    box.classList.remove('has-image','is-dragging');
+    hint.textContent='Pressione Ctrl + V, arraste ou clique para escolher';
+    requestAnimationFrame(()=>screenName.focus());
+  });
+  observer.observe(modal,{attributes:true,attributeFilter:['open']});
+})();
