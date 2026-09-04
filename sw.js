@@ -1,4 +1,20 @@
-const CACHE='controles-sisplan-v2.9';
-self.addEventListener('install',e=>{self.skipWaiting();e.waitUntil(caches.open(CACHE).then(c=>c.addAll(['./','index.html','styles.css','v2.css','ux-patch.css','gastos.css','client-loader.js','app-v2.js','ux-patch.js','gastos.js','manifest.webmanifest','icon.svg','assets/FichaTecnica.fr3']))) });
+const CACHE='controles-sisplan-v3.0';
+const ASSETS=['./','index.html','styles.css','v2.css','ux-patch.css','gastos.css','client-loader.js','app-v2.js','ux-patch.js','gastos.js','bank-privacy.js','manifest.webmanifest','icon.svg','assets/FichaTecnica.fr3'];
+self.addEventListener('install',e=>{self.skipWaiting();e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)))});
 self.addEventListener('activate',e=>e.waitUntil(Promise.all([self.clients.claim(),caches.keys().then(k=>Promise.all(k.filter(x=>x!==CACHE).map(x=>caches.delete(x))))])));
-self.addEventListener('fetch',e=>e.respondWith(fetch(e.request).then(r=>{let c=r.clone();caches.open(CACHE).then(x=>x.put(e.request,c));return r}).catch(()=>caches.match(e.request))));
+self.addEventListener('fetch',e=>{
+  const req=e.request;
+  e.respondWith(fetch(req).then(async r=>{
+    let response=r;
+    try{
+      const type=r.headers.get('content-type')||'';
+      if(req.mode==='navigate'&&type.includes('text/html')){
+        let html=await r.clone().text();
+        if(!html.includes('bank-privacy.js')) html=html.replace('</body>','<script src="bank-privacy.js?v=3.0"></script></body>');
+        response=new Response(html,{status:r.status,statusText:r.statusText,headers:r.headers});
+      }
+      const c=response.clone(); caches.open(CACHE).then(x=>x.put(req,c));
+    }catch{}
+    return response;
+  }).catch(()=>caches.match(req)));
+});
